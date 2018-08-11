@@ -1,0 +1,159 @@
+#### TIPS LINUX #####
+====================================================================================================================================================================================================================
+# Informações de CPU / Memória
+
+echo -n 'CPU: ' ; cat /proc/cpuinfo | grep processor | wc -l ; free -m | head -n+2 |tail -1 | awk '{print \"Memória:\" , \$2/1024, \"GB\"}'  >> Backup_Info.txt
+====================================================================================================================================================================================================================
+# FSCK LVM:
+
+Then type few lines below to fixed it.
+$vgchange --ignorelockingfailure -ay
+$lvscan --ignorelockingfailure
+$fsck -y /dev/VolumeGroup/LVname
+====================================================================================================================================================================================================================
+# COMANDOS REMOTO VIA SSH
+
+ssh -t vivek@server1.cyberciti.biz << EOF
+ sync
+ sync
+ sudo /sbin/shutdown -h 0
+EOF
+====================================================================================================================================================================================================================
+# SSL Verificar validade de Certificado:
+
+openssl x509 -in www.cursointellectus.com.br.crt -text -noout | egrep -i 'before|after'
+====================================================================================================================================================================================================================
+# Removendo Kernels antigos UBUNTU :
+
+dpkg -l 'linux-*' | sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | xargs sudo apt-get -y purge
+====================================================================================================================================================================================================================
+# Restart rede ubuntu:
+sudo ifdown --exclude=lo -a && sudo ifup --exclude=lo -a
+====================================================================================================================================================================================================================
+# Verificar uso por pasta 
+for dirs in $(ls --color=never -l | grep "^d" | awk '{print $9}'); do du -hs $dirs;done
+====================================================================================================================================================================================================================
+
+
+====================================================================================================================================================================================================================
+No Kernel inclui os parâmetros:
+ 
+#// Alteracoes recomendadas ReHdat
+
+net.ipv4.ip_forward = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.default.accept_source_route = 0
+kernel.sysrq = 0
+kernel.core_uses_pid = 1
+net.ipv4.tcp_syncookies = 1
+net.bridge.bridge-nf-call-ip6tables = 0
+net.bridge.bridge-nf-call-iptables = 0ff
+net.bridge.bridge-nf-call-arptables = 0
+kernel.msgmnb = 65536
+kernel.msgmax = 65536
+kernel.shmmax = 68719476736
+kernel.shmall = 4294967296
+#// Fim das recomendacoes Red Hat
+ 
+#// Tuning Gunter 17-Abr-18
+vm.swappiness = 10
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+net.ipv4.tcp_syncookies = 1
+net.ipv4.conf.all.log_martians = 1
+net.ipv4.conf.default.log_martians = 1
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.secure_redirects = 0
+net.ipv4.conf.default.secure_redirects = 0
+net.ipv4.ip_forward = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+kernel.exec-shield = 1
+kernel.randomize_va_space = 1
+net.ipv6.conf.default.router_solicitations = 0
+net.ipv6.conf.default.accept_ra_rtr_pref = 0
+net.ipv6.conf.default.accept_ra_pinfo = 0
+net.ipv6.conf.default.accept_ra_defrtr = 0
+net.ipv6.conf.default.autoconf = 0
+net.ipv6.conf.default.dad_transmits = 0
+net.ipv6.conf.default.max_addresses = 1
+# Aumentando limite do file descriptor
+fs.file-max = 128000
+kernel.pid_max = 65536
+net.ipv4.ip_local_port_range = 2000 65000
+net.ipv4.tcp_rmem = 4096 87380 8388608
+net.ipv4.tcp_wmem = 4096 87380 8388608
+# # Aumentando buffer de rede TCP
+# Defina o máximo de 16M (16777216) para redes de 1GB and 32M (33554432) ou 54M (56623104) para redes de 10GB
+net.core.rmem_max = 8388608
+net.core.wmem_max = 8388608
+net.core.netdev_max_backlog = 5000
+net.ipv4.tcp_window_scaling = 1
+net.ipv4.tcp_tw_recycle = 1
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 5
+net.ipv4.tcp_timestamps = 0
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv6.conf.default.accept_redirects = 0
+#// Fim do tuningComandos uteis:
+
+
+====================================================================================================================================================================================================================
+# LVM EXTEND:
+
+Gunter:  [root@cloud728 ~]# df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/VolGroup-lv_root
+                      242G  229G   12G  96% /
+tmpfs                 2.9G   16K  2.9G   1% /dev/shm
+/dev/sda1             477M  149M  303M  33% /boot
+/usr/tmpDSK           4.0G  137M  3.7G   4% /tmp
+
+[root@cloud728 ~]# ls /sys/class/scsi_host/ | while read host ; do echo "- - -" > /sys/class/scsi_host/$host/scan ; done
+
+
+[root@cloud728 ~]# lvs
+  LV      VG       Attr       LSize   Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv_root VolGroup -wi-ao---- 245.60g                                                    
+  lv_swap VolGroup -wi-ao----   3.91g  
+
+
+[root@cloud728 ~]# fdisk /dev/sdb
+
+[root@cloud728 ~]# pvcreate /dev/sdb1
+  Physical volume "/dev/sdb1" successfully created
+
+
+[root@cloud728 ~]# vgextend VolGroup /dev/sdb1                                                                                                                                                              
+  Volume group "VolGroup" successfully extended
+
+
+[root@cloud728 ~]# lvm lvextend -l +100%FREE /dev/mapper/VolGroup-lv_root
+  Size of logical volume VolGroup/lv_root changed from 245.60 GiB (62873 extents) to 275.59 GiB (70552 extents).
+  Logical volume lv_root successfully resized.
+
+
+[root@cloud728 ~]# fsadm resize /dev/mapper/VolGroup-lv_root
+resize2fs 1.41.12 (17-May-2010)
+Filesystem at /dev/mapper/VolGroup-lv_root is mounted on /; on-line resizing required
+old desc_blocks = 16, new_desc_blocks = 18
+Performing an on-line resize of /dev/mapper/VolGroup-lv_root to 72245248 (4k) blocks.
+The filesystem on /dev/mapper/VolGroup-lv_root is now 72245248 blocks long.
+
+
+[root@cloud728 ~]# df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/VolGroup-lv_root
+                      272G  229G   41G  85% /
+tmpfs                 2.9G   16K  2.9G   1% /dev/shm
+/dev/sda1             477M  149M  303M  33% /boot
+/usr/tmpDSK           4.0G  137M  3.7G   4% /tmp
+
+
+
+====================================================================================================================================================================================================================

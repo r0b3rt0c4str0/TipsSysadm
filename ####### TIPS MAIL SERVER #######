@@ -1,0 +1,82 @@
+####### TIPS MAIL SERVER #######
+=====================================================================================================================================================================
+## LOGS ##:
+
+grep "message-id=<201" /var/log/mail.log | grep "5B@" | awk '{print $6}' | while read Check ; do grep $Check /var/log/mail.log ; done  | grep nrcpt | grep vinicius.voi@ago.com.br
+
+# Topsender
+zgrep qmgr mail.log.1.gz | grep "from=<.*@glcomunicacao.com.br" | awk '{print $7}' | cut -d"=" -f2 | cut -d"<" -f2 | cut -d">" -f1 | tr '[A-Z]' '[a-z]' | sort | uniq -c | sort -rn
+
+# Qtd por dominio :
+X=`egrep "from=<.*@glcomunicacao.com.br" /var/log/mail.log | grep queue | awk '{print $9}' | cut -d"=" -f2` ; A=0 ; for I in $X ; do A=`expr $A + $I`; done ; echo $A
+
+# Verificar email to  from:
+zgrep "@cenibra.com.br" /var/log/mail.log.4[2-4].gz | grep "to=<" | awk '{print $6}' | grep -v NOQUEU | while read Email ; do grep $Email | grep "@paradvogados.com.br" ; done
+
+grep user /var/log/mail.log | awk '{print $8,$9}' | grep '@' | cut -d',' -f1 | sed -e 's|orig_to=<||g' | sed -e 's/>//' | sort | uniq -c | sort                                                                   
+
+grep user /var/log/mail.log | awk '{print $8,$9}' | grep -vE 'relay|size'
+
+dmesg -T| grep -E -i -B100 'killed process'
+
+
+=====================================================================================================================================================================
+
+####### Zimbra #########
+=====================================================================================================================================================================
+# Renovando SSL :
+
+/opt/zimbra/bin/zmcertmgr verifycrt comm ./commercial.key ./commercial.crt ./commercial_ca.crt
+/opt/zimbra/bin/zmcertmgr deploycrt comm ./commercial.crt ./commercial_ca.crt
+/opt/zimbra/bin/zmcertmgr viewdeployedcrt
+=====================================================================================================================================================================
+####### Exchange ########
+=====================================================================================================================================================================
+
+=====================================================================================================================================================================
+# Verificar ADM dominio exchange
+
+Get-RoleGroup -Organization domain.com -Identity "Organizgrep user /var/log/mail.log | awk '{print $8,$9}' | grep '@' | cut -d',' -f1 | sed -e 's|orig_to=<||g' | sed -e 's/>//' | sort | uniq -c | sort                                                                   
+
+grep user /var/log/mail.log | awk '{print $8,$9}' | grep -vE 'relay|size'
+
+dmesg -T| grep -E -i -B100 'killed process'
+ation Management" | Get-RoleGroupMember
+=====================================================================================================================================================================
+
+=====================================================================================================================================================================
+
+
+
+=====================================================================================================================================================================
+
+###### POSTFIX / DOVECOT #########
+
+=====================================================================================================================================================================
+# LIMPAR SPAM MDAS:
+
+find /maildir/ -maxdepth 2 -type d | awk -F'/' '{print $4 "@" $3}' | grep -v ^@ | while read Conta ; do doveadm expunge -u $Conta mailbox Spam savedbefore 4w ; done
+
+find /maildir/ -maxdepth 2 -type d | awk -F'/' '{print $4 "@" $3}' | grep -v ^@ | while read Conta ; do doveadm expunge -u $Conta mailbox Lixeira savedbefore 4w ; done
+
+find /maildir/ -mindepth 2 -maxdepth 2 -name "catchall" -print | awk -F'/' '{print $4 "@" $3}' | while read Catchall ; do doveadm expunge -u $Conta mailbox % savedbefore 2w ; done
+
+=====================================================================================================================================================================
+# DOVECOT
+
+doveadm who | awk '{s+=$2} END {print s}'
+doveadm who | awk '{s+=$2} END {print s}'
+=====================================================================================================================================================================
+killall -9 lmtp;invoke-rc.d dovecot stop;fuser -9 -k 143/tcp;sync && echo 3 > /proc/sys/vm/drop_caches; invoke-rc.d dovecot start;postsuper -r ALL
+=====================================================================================================================================================================
+grep "auth failed" /var/log/dovecot*.log | awk '{print $17}' | sort | uniq -c | sort -nrk1 | head -10
+=====================================================================================================================================================================
+# Remover domínios que não apontam para nosso servidor da estrutura:
+root@mda14:/maildir# ls -1 | while read Dom ; do if host pop.$(echo $Dom) | grep "has address" | grep 200.187.64.103 >> /dev/null 2>&1; then echo " " >> /dev/null ; else echo $Dom ; fi ; done | wc -l
+116
+root@mda14:/maildir# ls -1 | wc -l
+802
+=====================================================================================================================================================================
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================

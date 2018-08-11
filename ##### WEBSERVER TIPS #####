@@ -1,0 +1,147 @@
+														##### WEBSERVER TIPS #####
+
+# Identifica arquivos para remocao:
+find /var/log/httpd/logs/ -type f -mtime +30  -exec gzip -9 {} \;
+find ./www/ -type f ! -name "*.asp" | egrep -v "uploads|jpg|png" | less 
+
+# Compacta logs com mais de 100mb 
+find /var/www/vhosts -type f -name "*log" -exec du {} \; | awk '{ if ( $1 >= 102400 ) print $2}' | xargs gzip -9 -f
+
+# Mais Info Processos Php:
+ps aux | grep php | grep tmp | awk '{$1=$3=$4=$5=$6=$7=$8=$9=$10="";print}'
+
+# Verifica conexões por IP:
+netstat -tuplano | egrep ":80|:443" | awk '{print $5}' | sed -e "s/::ffff://g" | cut -d: -f1 | sort | uniq -c | sort -nrk1 | head -10
+while sleep 1 ; do clear ; netstat -tuplano | egrep ":80|:443" | awk '{print $5}' | sed -e "s/::ffff://g" | cut -d: -f1 | sort | uniq -c | sort -nrk1 | head -10 ; done
+
+find /vhosts/* -type f -regex ".*/.*\.\(zip\|exe\|rar\)" -exec du -h {} \;
+
+find /vhosts/* -type f -regex ".*/.*\.\(zip\|exe\|rar\)" -size +200M -exec du -h {} \;
+
+
+
+====================================================================================================================================================================================================================
+
+															##### APACHE TIPS #####
+
+# Lista Dominios via salt
+apachectl -S' | perl -pe 's/\x1b\[[0-9;]*[mG]//g' | grep "port 80" | awk '{print $4}' | sed -e "s/www.//g" | egrep -v "novavhost|rel-vhost|utils-vhost|vhost1|infolink.com|infolinkti.com|w3br"
+
+
+
+
+#  PADRAO CONF APACHE RLIMIT:
+  RLimitNPROC 5 10
+  RLimitMEM 256000000 256000000
+  RLimitCPU 120 180
+
+  # Deve existir no WP
+
+RewriteEngine On
+  AddType application/x-httpd-php .php
+  DirectoryIndex index.php
+  <Directory />
+        Options SymLinksIfOwnerMatch
+        AllowOverride All
+  </Directory>
+
+# Bloqueando acesso para todos e liberando para ips especificos, via conf do virtual host:
+   <Location />                                    
+    Order Deny,Allow                               
+    Deny from all                                  
+    Allow from 200.187.69.175 192.168.0.0/16                                  
+  </Location>          
+
+
+
+LOGS:
+
+# Filtra todos http status code do access_log 
+
+cut -d'"' -f3 /var/log/httpd/access_log | cut -d' ' -f2 | sort | uniq -c | sort -rg
+
+# Filtra no log do apache por erros 404 ($4=404)
+cut -d'"' -f2,3 /var/log/httpd/access_log | awk '$4=404{print $4" "$2}' | sort | uniq -c | sort -rg
+
+# Verifica se dominios ainda apontam para o servidor;
+
+# Verificar se dominio ainda aponta para o host :
+ls -1 | while read Dom ; do if host $(echo $Dom) | grep "has address" | grep $IPHOST >> /dev/null 2>&1; then echo " " >> /dev/null ; else echo $Dom ; fi ; done | wc -l
+
+# Compacta log com mais de 
+
+====================================================================================================================================================================================================================
+
+																##### NGINX TIPS #####		
+# Scritp Nginxctl
+git clone http://gitlab.infolink.com.br/valexandre/nginx.git
+cd nginx
+chmod 755 nginx_commands
+./nginx_commands
+
+# Limpar Cache Nginx
+rm -rf /var/lib/nginx/cache/*
+
+LOGS:
+
+# Verificar quem não esta fazendo cache:
+cat  /var/log/nginx/access.log | awk 'BEGIN{print "Qtde","StatusCode"};$7 ~ /^[0-9]+$/ && $7 !~ /MISS/ { tot[$7]++ } END { for (i in tot) print tot[i],i } '  | column -t
+
+
+# Nginx Padrão 
+NGINX PADRAO:
+
+<VirtualHost 192.168.0.3:82>
+       # Options SymLinksIfOwnerMatch
+        DocumentRoot /virtual/pizzadominos.com.br/www
+        ServerName pizzadominos.com.br
+        ServerAlias www.pizzadominos.com.br
+        DirectoryIndex index.php index.phtml index.html index.htm
+
+<Directory />
+    Options FollowSymLinks
+    AllowOverride None
+    Order deny,allow
+    Deny from all
+    Allow from all
+</Directory>
+
+</VirtualHost>
+
+====================================================================================================================================================================================================================
+
+
+# Ataque Python-Requests:
+
+- Criado o arquivo /etc/nginx/drop_user_agent.conf com o conteúdo abaixo: 
+if ($http_user_agent ~* python-requests) {
+    return 666;
+    }
+
+## NOS CONFS NGINX
+include /etc/nginx/drop_user_agent.conf ;
+
+- Criada regra na jail.conf do Fail2Ban:
+[python-attack]
+enabled = true
+filter  = python-attack
+action   = iptables[name=python-attack, port=http, protocol=tcp]
+logpath = /var/log/nginx/access.log
+bantime = 60000000000
+maxretry = 3
+
+- Adicionado o filter: /etc/fail2ban/filter.d/python-attack.conf
+[Definition]
+
+# Option:  failregex
+# Notes.:  Regexp to catch Apache dictionary attacks on Wordpress wp-login
+# Values:  TEXT
+#
+#badbots = python-request
+#failregex = ^<HOST> -.*compatible;.*(?:%(badbots)s|%(badbotscustom)s)
+#failregex = ^<HOST> -.*compatible;.*(?:%(badbots)s)
+failregex = ^<HOST> -.*"(GET|POST|HEAD).*HTTP.*" 666
+ignoreregex =
+
+O arquivo de configuração do NGinx poderá ter adição de bots posteriormente, caso necessário. 
+O código de erro configurado foi utilizado por não fazer parte do error codes padrões. 
