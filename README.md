@@ -2,17 +2,16 @@
 
 Diversos comandos utilizados no dia a dia na administração de sistemas Linux, Zimbra, Exchange, Posftix, Nginx, Apache entre outros.
 
-
-Comandos uteis:
-
-Policy - Blacklist / Whitelist --> dbhost02 --> mysql.4.1.10a --> banco email_infolink_com_br 
+===============================================================================================================================
 
 
-verificar emails
+verificar email:
 for i in $(zgrep "from=<rh@ibbca.com.br" /var/log/maillog-20160108 | grep "Jan  7" | awk '{print $6}') ; do zgrep $i /var/log/maillog-20160108 ; done
 
+===============================================================================================================================
 
-verificar uso por pasta --> for dirs in $(ls --color=never -l | grep "^d" | awk '{print $9}'); do du -hs $dirs;done
+
+Verificar uso por pasta --> for dirs in $(ls --color=never -l | grep "^d" | awk '{print $9}'); do du -hs $dirs;done
 
 LIMPAR CACHE NGINX --> rm -rf /var/lib/nginx/cache/*
 
@@ -23,11 +22,12 @@ Compacta logs com mais de 100mb --> find /var/www/vhosts -type f -name "*log" -e
 
 for i in $(postqueue -c /etc/postfix-bounce -p | grep `date +%b`| rev | awk '{print $1}' | rev | cut -d@ -f2 | sort | uniq -c | sort -nk1  | awk '{ if ( $1 >= 50 ) print $2}') ; do pfdel *@$i /etc/postfix-bounce ; done
 ===============================================================================================================================
+
 Verificar ADM dominio exchange
 Get-RoleGroup -Organization domain.com -Identity "Organization Management" | Get-RoleGroupMember
 
 =================================================================================================================
-O cliente pode fazer controle de cache em suas aplicações usando o web.config. Por exemplo:
+Controle de cache em  aplicações usando o web.config. Por exemplo:
 
 <outputCacheSettings>
   <outputCacheProfiles>
@@ -35,23 +35,7 @@ O cliente pode fazer controle de cache em suas aplicações usando o web.config.
   </outputCacheProfiles>
 </outputCacheSettings>
 Mais informações aqui: https://msdn.microsoft.com/pt-br/library/ms178606(v=vs.100).aspx
-
-================================================================================================================================
-Política de Recursos/Performance PHP
-
-memory_limit = 128 MB
-max_execution_time = 30 segundos
-max_input_time = 60 segundos
-post_max_size = 64 MB
-upload_max_filesize = 64 MB
-max_file_uploads = 20
-Política de Recursos/Performance Plataforma de Hospedagem
-
-Tempo de CPU: 120 à 180 segundos
-Arquivos abertos: até 40 simultaneamente
-Processos: até 10 simultaneamente
-SSH: shell limitado, em esquema chrooted jail e sem /proc
-===================================================================================================================
+====================================================================================================================================
   PADRAO CONF APACHE RLIMIT:
   RLimitNPROC 5 10
   RLimitMEM 256000000 256000000
@@ -86,10 +70,11 @@ zgrep "@cenibra.com.br" /var/log/mail.log.4[2-4].gz | grep "to=<" | awk '{print 
 
 
 ====================================================================================================================================
+Prá liberar espaço nas mdas:
 
-(13:56:59) Vega: find /maildir/ -maxdepth 5 -type d -name ".Spam" | while read SpamFolder ; do find $SpamFolder -type f -name "*mda04*" -mtime +30 -exec rm -v {} \; ; done
-(13:57:01) Vega: find /maildir/ -maxdepth 4 -type d -name catchall | while read Catchall ; do find $Catchall -type f -name "*mda04*" -mtime +30 -exec rm -fv {} \; ; done
-(13:57:08) Vega: Prá liberar espaço nas mdas.
+find /maildir/ -maxdepth 5 -type d -name ".Spam" | while read SpamFolder ; do find $SpamFolder -type f -name "*mda04*" -mtime +30 -exec rm -v {} \; ; done
+find /maildir/ -maxdepth 4 -type d -name catchall | while read Catchall ; do find $Catchall -type f -name "*mda04*" -mtime +30 -exec rm -fv {} \; ; done
+
 
 ====================================================================================================================================
 TOP SENDER DOMINIO ---> 
@@ -265,9 +250,6 @@ cat /infolink/etc/zabbix/datastore_vcenter02 | awk 'BEGIN{print "Storage","Uso"}
 
 cat  /var/log/nginx/access.log | awk 'BEGIN{print "Qtde","StatusCode"};$7 ~ /^[0-9]+$/ && $7 !~ /MISS/ { tot[$7]++ } END { for (i in tot) print tot[i],i } '  | column -t
 
-
-
-FM8N3-J889P-DVDW8-B9VRV-6XT9Y
 
 =======================================================================================
 Senhores,
