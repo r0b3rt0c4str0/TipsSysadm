@@ -30,6 +30,15 @@ dmesg -T| grep -E -i -B100 'killed process'
 /opt/zimbra/bin/zmcertmgr deploycrt comm ./commercial.crt ./commercial_ca.crt
 /opt/zimbra/bin/zmcertmgr viewdeployedcrt
 =====================================================================================================================================================================
+Verificar emails apagados:
+
+grep -i john.*Trash  mailbox.log.2009-10-10
+2009-10-10 20:46:30,498 INFO  [btpool0-21] [name=john@abc.com;aname=admin@abc.com;mid=20;ip=192.168.1.21;ua=ZimbraWebClient - [unknown] (Win)/5.0.18_GA_3011.RHEL5;] mailop - Moving Conversation (id=854) to Folder Trash (id=3).  Affected message ids: 834,853,856,859,860,885,886,888.
+
+[zimbra@mail log]$ grep -i john.*Deleting mailbox.log.2009-10-10
+2009-10-10 18:01:43,245 INFO  [MailboxPurge] [name=john@abc.com;mid=20;] mailop - Deleting items: 639.
+
+=====================================================================================================================================================================
 ####### Exchange ########
 =====================================================================================================================================================================
 
