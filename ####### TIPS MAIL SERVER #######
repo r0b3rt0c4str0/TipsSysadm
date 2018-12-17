@@ -19,6 +19,7 @@ grep user /var/log/mail.log | awk '{print $8,$9}' | grep -vE 'relay|size'
 
 dmesg -T| grep -E -i -B100 'killed process'
 
+grep "Quota exceeded" /var/log/dovecot.log | awk '{print $7}' | sed -e "s/)://g" | sort -u  | while read MailFull ; do doveadm expunge -u $MailFull MAILBOX Spam savedbefore 10d ; done
 
 =====================================================================================================================================================================
 
