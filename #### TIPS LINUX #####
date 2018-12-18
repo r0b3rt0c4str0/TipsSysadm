@@ -33,7 +33,8 @@ sudo ifdown --exclude=lo -a && sudo ifup --exclude=lo -a
 # Verificar uso por pasta 
 for dirs in $(ls --color=never -l | grep "^d" | awk '{print $9}'); do du -hs $dirs;done
 ====================================================================================================================================================================================================================
-
+(13:19:23) Vega: [root@vps034 ~]# mysql -p2FLKNo7S -e "show full processlist;" | awk '$5 = /Sleep/ {print "kill",$1 ";"}' | mysql -p2FLKNo7S
+(13:19:31) Vega: Para checar: [root@vps034 ~]# mysql -p2FLKNo7S -e "show full processlist;" | awk '$5 = /Sleep/ {print "kill",$1 ";"}'
 
 ====================================================================================================================================================================================================================
 No Kernel inclui os parâmetros:
