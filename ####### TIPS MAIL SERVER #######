@@ -21,6 +21,8 @@ dmesg -T| grep -E -i -B100 'killed process'
 
 grep "Quota exceeded" /var/log/dovecot.log | awk '{print $7}' | sed -e "s/)://g" | sort -u  | while read MailFull ; do doveadm expunge -u $MailFull MAILBOX Spam savedbefore 10d ; done
 
+Criar arquivos com emails bounce:
+for TICKET in $(pqgrep suporte.w3br.com | awk '{print $1}' | sed 's/\*//g'); do postcat -c /etc/postfix-bounce -q $TICKET >> suporte.w3br.com.txt; done
 =====================================================================================================================================================================
 
 ####### Zimbra #########
