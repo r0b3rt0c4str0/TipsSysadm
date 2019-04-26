@@ -1,0 +1,256 @@
+**** DOCKER ****
+# Start docker daemon
+docker -d
+
+# start a container with an interactive shell
+docker run -ti <image_name> /bin/bash
+
+# "shell" into a running container (docker-1.3+)
+docker exec -ti <container_name> bash
+
+# inspect a running container
+docker inspect <container_name> (or <container_id>)
+
+# Get the process ID for a container
+# Source: https://github.com/jpetazzo/nsenter
+docker inspect --format {{.State.Pid}} <container_name_or_ID>
+
+# List the current mounted volumes for a container (and pretty print)
+# Source:
+# http://nathanleclaire.com/blog/2014/07/12/10-docker-tips-and-tricks-that-will-make-you-sing-a-whale-song-of-joy/
+docker inspect --format='{{json .Volumes}}' <container_id> | python -mjson.tool
+
+# Copy files/folders between a container and your host
+docker cp foo.txt mycontainer:/foo.txt
+
+# list currently running containers
+docker ps
+
+# list all containers
+docker ps -a
+
+# list all images
+docker images
+
+
+**** MARIADB ****
+# Repositorio:
+
+# MariaDB 5.5 CentOS repository list - created 2013-09-16 16:43 UTC
+# http://mariadb.org/mariadb/repositories/
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/5.5/centos6-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+
+# Instalação:
+
+yum install MariaDB-server MariaDB-client;/etc/init.d/mysql start;mysql_secure_installation
+
+# Criação da Base:
+
+CREATE DATABASE dominio_tld CHARACTER SET utf8 COLLATE utf8_general_ci;
+
+# Permissoes no banco para usuario:
+
+GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP,ALTER,INDEX,CREATE ROUTINE,ALTER ROUTINE,CREATE VIEW,LOCK TABLES,EXECUTE,CREATE TEMPORARY TABLES,SHOW VIEW on DOMINIO_COM_BR.* to USUARIO@'%' identified by 'SENHA ACESSO AO BANCO';
+
+flush privileges;
+
+chkconfig mysqld on;/etc/init.d/mysqld start
+
+#Verifica brute force mysql
+grep "Access denied for user" /var/lib/mysql/mysql-error.log | awk '{print $9}' | cut -d\@ -f2 | sort | uniq -c | sort -nk1
+
+**** VSFTPD ****
+
+# UBUNTU
+
+wget http://http.us.debian.org/debian/pool/main/v/vsftpd/vsftpd_3.0.2-3_amd64.deb -O vsftpd.deb;dpkg -i vsftpd.deb;echo "allow_writeable_chroot=YES" >> /etc/vsftpd.conf;service vsftpd reload
+
+# CENTOS
+
+yum install vsftpd -y;vim /etc/vsftpd/vsftpd.conf
+
+anonymous_enable=NO
+xferlog_std_format=NO
+xferlog_file=/var/log/xferlog
+log_ftp_protocol=YES
+chroot_local_user=YES
+
+chkconfig vsftpd on;service vsftpd restart
+
+watch -n 5 "ps -C vsftpd -o user,pid,stime,cmd | grep '[0-9]/'"
+Watching user network connections:
+
+Shell
+
+watch -n 5 "netstat -tunapT | egrep --line-buffered 'ESTABLISHED.*vsftpd'"
+1
+watch -n 5 "netstat -tunapT | egrep --line-buffered 'ESTABLISHED.*vsftpd'"
+Show process name, PID, and file descriptor for each open FTP connection:
+
+Shell
+
+ss --processes --numeric --resolve --options state established not dst $(ip -o -f inet addr show | awk '/scope global/ {print $4}') and not dst 127.0.0.1 | sed -re "s/[[:space:]]\+/ /g" -e 's/::ffff://g' -e 's/timer:\([0-9a-z,]{1,}\)//g' | awk '{print $3,$4,$5}' | grep -v ^Local | grep vsftpd | column -t
+1
+ss --processes --numeric --resolve --options state established not dst $(ip -o -f inet addr show | awk '/scope global/ {print $4}') and not dst 127.0.0.1 | sed -re "s/[[:space:]]\+/ /g" -e 's/::ffff://g' -e 's/timer:\([0-9a-z,]{1,}\)//g' | awk '{print $3,$4,$5}' | grep -v ^Local | grep vsftpd | column -t
+Show output of ps -ef for each user connection process:
+
+Shell
+
+ss --processes --numeric --resolve --options state established not dst $(ip -o -f inet addr show | awk '/scope global/ {print $4}') and not dst 127.0.0.1 | sed -re "s/[[:space:]]\+/ /g" -e 's/::ffff://g' -e 's/timer:\([0-9a-z,]{1,}\)//g' | awk '{print $3,$4,$5}' | grep -v ^Local | column -t | egrep -o ",[0-9]{1,}," | sed -e 's/,//g' | sort -u | while read pid ; do ps -ef | grep ${pid} | grep -v grep | egrep "vsftpd:.*[0-9]\/"; done | sort -u
+1
+ss --processes --numeric --resolve --options state established not dst $(ip -o -f inet addr show | awk '/scope global/ {print $4}') and not dst 127.0.0.1 | sed -re "s/[[:space:]]\+/ /g" -e 's/::ffff://g' -e 's/timer:\([0-9a-z,]{1,}\)//g' | awk '{print $3,$4,$5}' | grep -v ^Local | column -t | egrep -o ",[0-9]{1,}," | sed -e 's/,//g' | sort -u | while read pid ; do ps -ef | grep ${pid} | grep -v grep | egrep "vsftpd:.*[0-9]\/"; done | sort -u
+Checking per-user bandwidth utilization:
+
+Shell
+
+u=$(ps -C vsftpd -o user,pid,stime,cmd | egrep -o '\.[0-9]{1,3}/[[:alnum:]]+' | awk -F'/' '{print $NF}' | sort -u | sed ':a;N;$!ba;s/\n/|/g')
+if [ ! -z "${u}" ]; then
+watch -n 4 "nethogs -d 2 -c 1 -t -v 0 2>/dev/null | egrep \"/(${u}):\sRETR\" | sed -r 's/\s([0-9]{1,}\.[0-9]{1,})\s([0-9]{1,}\.[0-9]{1,})/,\1,\2/g' | (echo ".,,,DOWN KB/s,UP KB/s" && cat) | column -s ',' -t"; fi
+1
+2
+3
+u=$(ps -C vsftpd -o user,pid,stime,cmd | egrep -o '\.[0-9]{1,3}/[[:alnum:]]+' | awk -F'/' '{print $NF}' | sort -u | sed ':a;N;$!ba;s/\n/|/g')
+if [ ! -z "${u}" ]; then
+watch -n 4 "nethogs -d 2 -c 1 -t -v 0 2>/dev/null | egrep \"/(${u}):\sRETR\" | sed -r 's/\s([0-9]{1,}\.[0-9]{1,})\s([0-9]{1,}\.[0-9]{1,})/,\1,\2/g' | (echo ".,,,DOWN KB/s,UP KB/s" && cat) | column -s ',' -t"; fi
+Get VSFTP server login and transfer statistics:
+
+Shell
+
+log="/var/log/vsftpd.log" ; k=0 ; array=( "OK LOGIN" "FAIL LOGIN" "OK DOWNLOAD" "FAIL DOWNLOAD" "OK UPLOAD" "FAIL UPLOAD" ) ; for d in {7..0}; do date -d "`date +'%Y-%m-%d'` - $d days" +'%b %-d'; done | while read d ; do if [ ${k} -eq 0 ] ; then echo -ne "PERIOD," ; printf "%s," "${array[@]}" | sed 's/,$//g' ; echo "" ; k=1 ; fi; j=1 ; for i in "${array[@]}" ; do p="\] ${i}"; eval "$(echo c${j})"=$(zgrep -E "${p}" "${log}"* | tr -s ' ' | cut -d: -f2- | grep -c "${d} ") ; (( j = j + 1 )) ; done; echo -ne "`date -d "${d}" +'%Y-%m-%d'`," ; for j in $(seq 1 `echo "${#array[@]}"`) ; do eval echo -ne $(echo $`eval echo "c${j},"`); done | sed 's/,$//g' ; echo "" ; done | column -s ',' -t
+1
+log="/var/log/vsftpd.log" ; k=0 ; array=( "OK LOGIN" "FAIL LOGIN" "OK DOWNLOAD" "FAIL DOWNLOAD" "OK UPLOAD" "FAIL UPLOAD" ) ; for d in {7..0}; do date -d "`date +'%Y-%m-%d'` - $d days" +'%b %-d'; done | while read d ; do if [ ${k} -eq 0 ] ; then echo -ne "PERIOD," ; printf "%s," "${array[@]}" | sed 's/,$//g' ; echo "" ; k=1 ; fi; j=1 ; for i in "${array[@]}" ; do p="\] ${i}"; eval "$(echo c${j})"=$(zgrep -E "${p}" "${log}"* | tr -s ' ' | cut -d: -f2- | grep -c "${d} ") ; (( j = j + 1 )) ; done; echo -ne "`date -d "${d}" +'%Y-%m-%d'`," ; for j in $(seq 1 `echo "${#array[@]}"`) ; do eval echo -ne $(echo $`eval echo "c${j},"`); done | sed 's/,$//g' ; echo "" ; done | column -s ',' -t
+
+
+**** APACHE ****
+
+# Verrificar dominios atendidos pelo host:
+apachectl -t -D DUMP_VHOSTS | grep 80 | cut -d"(" -f2 | sed -e 's%/etc/httpd/conf.d/%%g' | sed -e 's%.conf:1)%%g' | grep -ve '(192|Syntax)'
+
+# verificar em todos logs apache acesso a pagina especifica
+404.php /var/log/httpd/access_log* | cut -d: -f2 | awk '{print $1}' | sort | uniq -c | sort -nrk1
+
+while sleep 1 ; do clear ; netstat -utplano | egrep ":80|:443" | awk '{print $5}' | sed -e "s/::ffff://g" | cut -d: -f1 | wc -l ; uptime ; done
+
+# Bloqueio Infolink
+<Location />
+Order Deny,Allow
+Deny from all
+Allow from 200.187.69.175 192.168.0.0/16
+</Location>
+
+
+# Instalação básica
+
+yum install httpd php-gd php-imap php-mysql php-soap php-xml php-pdo php -y;chkconfig httpd on;service httpd restart
+
+mkdir -p /virtual/dominio_do_cliente.com.br/www
+
+
+# Editar /etc/httpd/conf/httpd.conf
+
+KeepAlive On
+MaxKeepAliveRequests 0
+KeepAliveTimeout 10
+
+<IfModule prefork.c>
+StartServers       8
+MinSpareServers    5
+MaxSpareServers   20
+ServerLimit      150
+MaxClients       150
+MaxRequestsPerChild  30000
+</IfModule>
+
+
+<VirtualHost 192.168.0.x:80>
+   DocumentRoot /virtual/dominio.com.br/www
+   ServerName dominio.com.br
+   ServerAlias www.dominio.com.br
+   ServerAlias dominio.temp.w3br.com (opcional)
+   DirectoryIndex index.htm home.htm index.php3 index.php index.php4 index.html index.py index.shtml
+
+  <Directory />
+       # Options SymLinksIfOwnerMatch
+        AllowOverride All
+  </Directory>
+ </VirtualHost>
+
+# WORDPRESS
+Directory /var/www/>
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
+
+# Restringir acesso por IP
+Order Deny,Allow
+Deny from all
+Allow from 176.16.0.0/16
+
+# Turn off directory browsing
+Options -Indexes
+
+# Turn off server side includes
+Options -Includes
+
+# Turn off CGI execution
+Options -ExecCGI
+
+# Don't allow apache to follow symbolic links
+Options -FollowSymLinks
+
+# Turn off multiple option
+Options none
+
+# Turn off support for htaccess
+AllowOverride None
+
+#DirectoryMatch
+#Funciona como a diretiva <Directory> mas trabalha com expressões regulares como argumento. Por exemplo:
+     <DirectoryMatch "^/www/.*">
+           Order deny,allow
+                 deny from all
+                      <DirectoryMatch>
+
+Bloqueará o acesso ao diretório /www e sub-diretórios dentro dele.
+
+# Normalmente é encontrado a opção Options dentro de uma das diretivas acima, a função desta diretiva é controlar os seguintes aspectos da listagem de diretórios:
+#
+- All
+Todas as opções são usadas exceto a MultiViews. É a padrão caso a opção Options não seja especificada.
+- ExecCGI
+Permite a execução de scripts CGI.
+- FollowSymLinks
+O servidor seguirá links simbólicos neste diretório (o caminho não é modificado). Esta opção é ignorada caso apareça dentro das diretivas <Location>, <LocationMatch> e <DirectoryMatch>.
+- Includes
+É permitido o uso de includes no lado do servidor.
+- IncludesNOEXEC
+É permitido o uso de includes do lado do servidor, mas o comando #exec e #include de um script CGI são desativados.
+- Indexes
+Se não existir um arquivo especificado pela diretiva <DirectoryIndex> no diretório especificado, o servidor formatará automaticamente a listagem ao invés de gerar uma resposta de acesso negado.
+- MultiViews
+Permite o uso da Negociação de conteúdo naquele diretório. A negociação de conteúdo permite o envio de um documento no idioma requisitado pelo navegador do cliente.
+- SymLinksIfOwnerMatch
+O servidor somente seguirá links simbólicos se o arquivo ou diretório alvo tiver como dono o mesmo user ID do link. Esta opção é ignorada caso apareça dentro das diretivas <Location>, <LocationMatch> e <DirectoryMatch>.
+
+https://pt.wikibooks.org/wiki/Guia_do_Linux/Avan%C3%A7ado/Apache/Exemplo_comentado_de_um_arquivo_de_configura%C3%A7%C3%A3o_do_Apache
+
+#APACHE PROCESSES THAT CPU OR MEMORY IS LARGER THAN 0
+ps -A --sort -rss -o pid,comm,pmem,pcpu,lstart | grep httpd | awk '($3>0) || ($4>0)'
+
+#TOTAL CPU USED BY THE APACHE PROCESS
+ps -A --sort -rss -o pid,comm,pmem,pcpu | grep httpd | awk '{n+=$4} END {print n"%"}'
+
+#TOTAL MEMORY USED BY THE APACHE PROCESS
+ps -A --sort -rss -o pid,comm,pmem,pcpu | grep httpd | awk '{n+=$3} END {print n"%"}
+
+# Filtra logs
+# Tudo que que retorna 500 ou que nao retorna 200
+awk '($10 ~ /500/)' /var/log/httpd/access_log | awk '{print $2,$10,$1,$8}' | sort | uniq
+
+awk '($10 !~ /200/)' /var/log/httpd/access_log | awk '{print $2,$10,$1,$8}' | sort | uniq
+
