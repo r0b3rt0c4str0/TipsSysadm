@@ -254,3 +254,27 @@ awk '($10 ~ /500/)' /var/log/httpd/access_log | awk '{print $2,$10,$1,$8}' | sor
 
 awk '($10 !~ /200/)' /var/log/httpd/access_log | awk '{print $2,$10,$1,$8}' | sort | uniq
 
+**** FIREWALLD ****
+#-- Display whether service is running
+firewall-cmd status
+systemctl status firewalld
+
+#Zones
+firewall-cmd --get-default-zone
+firewall-cmd --get-active-zones
+firewall-cmd --list-all
+
+#List Services
+firewall-cmd --get-services
+
+#Add service / Port
+firewall-cmd --zone=public --add-service=samba --add-service=samba-client --permanent
+firewall-cmd --zone=public --add-port=5000/tcp
+
+# Listar Serviços
+firewall-cmd --zone=public --list-service
+
+# Listar Portas
+firewall-cmd --list-ports
+
+
