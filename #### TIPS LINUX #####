@@ -158,3 +158,31 @@ tmpfs                 2.9G   16K  2.9G   1% /dev/shm
 
 
 ====================================================================================================================================================================================================================
+#Calculando tamanho da direitiva innobdb_pool_size:
+
+Servidor dedicado:
+
+awk '
+/MemTotal/{
+$3="GB"
+$2=sprintf("%.0f",$2/1048576)
+print
+$1="  Mem80%:"
+$2=sprintf("%.0f",$2*.8)
+print
+}' /proc/meminfo
+
+Servidor Compartilhado:
+
+awk '
+/MemAvail/{
+$3="G";_=$2
+$2=sprintf("% 3.0f",_/1048576)
+print
+for (i=80;i>=25;i-=10) {
+$1="MemAvail_"i"%:"
+$2=sprintf("% 3.0f",_*(i/100)/1048576)
+$4=sprintf("| %.0f M",_*(i/100)/1024)
+print
+}
+}' /proc/meminfo
