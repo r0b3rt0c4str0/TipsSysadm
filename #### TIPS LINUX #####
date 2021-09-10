@@ -1,4 +1,10 @@
 #### TIPS LINUX #####
+
+# BACKUP ZIPADO DE TODOS BASES MYSQL:
+
+for i in $(mysql -u root -pBEq\^C09BtpdA7R8l5u8\#xU\%\*a -s -e "show databases;" | tail -n+3); do mysqldump --routines --triggers -u root -pBEq\^C09BtpdA7R8l5u8\#xU\%\*a  $i > $i`date +\%m-\%d-\%Y`.sql && zip -r $i`date +\%m-\%d-\%Y`.sql.zip $i`date +\%m-\%d-\%Y`.sql;done
+
+
 ====================================================================================================================================================================================================================
 # Informações de CPU / Memória
 
